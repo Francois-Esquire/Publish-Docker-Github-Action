@@ -30,6 +30,7 @@ fi;
 echo ${INPUT_PASSWORD} | docker login -u ${INPUT_USERNAME} --password-stdin ${INPUT_REGISTRY}
 
 DOCKERNAME="${INPUT_NAME}:${BRANCH}"
+DOCKERCONTEXT="."
 BUILDPARAMS="${INPUT_EXTRA_BUILD_PARAMS}"
 
 if [ ! -z "${INPUT_DOCKERNAME_APPENDIX}" ]; then
@@ -38,6 +39,10 @@ fi
 
 if [ ! -z "${INPUT_DOCKERFILE}" ]; then
   BUILDPARAMS="$BUILDPARAMS -f ${INPUT_DOCKERFILE}"
+fi
+
+if [ ! -z "${INPUT_DOCKERCONTEXT}" ]; then
+  DOCKERCONTEXT="${INPUT_DOCKERCONTEXT}"
 fi
 
 if [ ! -z "${INPUT_CACHE}" ]; then
@@ -49,16 +54,16 @@ if [ "${INPUT_SNAPSHOT}" == "true" ]; then
   timestamp=`date +%Y%m%d%H%M%S`
   shortSha=$(echo "${GITHUB_SHA}" | cut -c1-6)
   SHA_DOCKER_NAME="${INPUT_NAME}:${timestamp}${shortSha}"
-  docker build $BUILDPARAMS -t ${DOCKERNAME} -t ${SHA_DOCKER_NAME} .
+  docker build $BUILDPARAMS -t ${DOCKERNAME} -t ${SHA_DOCKER_NAME} $DOCKERCONTEXT
   docker push ${DOCKERNAME}
   docker push ${SHA_DOCKER_NAME}
 elif [ "${INPUT_TAGGING}" == "true" ]; then
   DOCKER_TAG=$(echo ${GITHUB_REF} | sed -e 's/refs\/tags\/v//')
-  docker build $BUILDPARAMS -t ${INPUT_NAME}:latest -t ${INPUT_NAME}:${DOCKER_TAG} .
+  docker build $BUILDPARAMS -t ${INPUT_NAME}:latest -t ${INPUT_NAME}:${DOCKER_TAG} $DOCKERCONTEXT
   docker push ${INPUT_NAME}:latest
   docker push ${INPUT_NAME}:${DOCKER_TAG}
 else
-  docker build $BUILDPARAMS -t ${DOCKERNAME} .
+  docker build $BUILDPARAMS -t ${DOCKERNAME} $DOCKERCONTEXT
   docker push ${DOCKERNAME}
 fi
 
